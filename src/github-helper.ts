@@ -43,7 +43,6 @@ export class GitHubHelper {
   ): Promise<Pull> {
     const [headOwner] = headRepository.split('/')
     const headBranch = `${headOwner}:${inputs.branch}`
-    const headBranchFull = `${headRepository}:${inputs.branch}`
 
     // Try to create the pull request
     try {
@@ -80,9 +79,14 @@ export class GitHubHelper {
     const {data: pulls} = await this.octokit.rest.pulls.list({
       ...this.parseRepository(baseRepository),
       state: 'open',
-      head: headBranchFull,
+      head: headBranch,
       base: inputs.base
     })
+    if (pulls.length !== 1) {
+      throw new Error(
+        `Expected one open pull request for ${headBranch} => ${inputs.base} in ${baseRepository}, found ${pulls.length}`
+      )
+    }
     core.info(`Attempting update of pull request`)
     const {data: pull} = await this.octokit.rest.pulls.update({
       ...this.parseRepository(baseRepository),

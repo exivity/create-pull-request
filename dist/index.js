@@ -962,7 +962,6 @@ class GitHubHelper {
         return __awaiter(this, void 0, void 0, function* () {
             const [headOwner] = headRepository.split('/');
             const headBranch = `${headOwner}:${inputs.branch}`;
-            const headBranchFull = `${headRepository}:${inputs.branch}`;
             // Try to create the pull request
             try {
                 core.info(`Attempting creation of pull request`);
@@ -985,7 +984,10 @@ class GitHubHelper {
             }
             // Update the pull request that exists for this branch and base
             core.info(`Fetching existing pull request`);
-            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranchFull, base: inputs.base }));
+            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
+            if (pulls.length !== 1) {
+                throw new Error(`Expected one open pull request for ${headBranch} => ${inputs.base} in ${baseRepository}, found ${pulls.length}`);
+            }
             core.info(`Attempting update of pull request`);
             const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pulls[0].number, title: inputs.title, body: inputs.body }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
